@@ -28,7 +28,6 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringVarP(&generatorCfg.InFile, "in", "i", "", "Proto file to read in")
-	// rootCmd.Flags().StringVarP(&generatorCfg.OutFile, "out", "o", "structs.go", "Go file to write out")
 
 	setPFlagsFromEnv(rootCmd)
 }
