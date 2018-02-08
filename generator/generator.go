@@ -2,36 +2,40 @@ package generator
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/generator"
+	"go/ast"
+	"go/parser"
+	"go/token"
 )
 
 func Generator(cfg Config) {
 	fmt.Println("Starting Generator")
 	defer fmt.Println("Done Generator")
 
-	g := generator.New()
+	fset := token.NewFileSet()
 
-	// data, err := ioutil.ReadFile(cfg.InFile)
-	data, err := ioutil.ReadAll(os.Stdin)
+	astFile, err := parser.ParseFile(fset, "/Users/rsmith/go/src/github.com/rms1000watt/genni/examples/people.go", nil, parser.AllErrors)
 	if err != nil {
-		g.Error(err, "reading input")
+		fmt.Println("Error:", err)
+		return
 	}
 
-	fmt.Println(string(data))
+	ast.Inspect(astFile, func(n ast.Node) bool {
+		switch x := n.(type) {
+		case *ast.TypeSpec:
+			fmt.Printf("STRUCT Name: %s\n", x.Name)
+		case *ast.Field:
+			tagName := getTagName(x.Tag)
+			fmt.Printf("FIELD Name: %s Type: %s Tag: %s\n", x.Names, x.Type, tagName)
+		}
+		return true
+	})
 
-	if err := proto.Unmarshal(data, g.Request); err != nil {
-		g.Error(err, "parsing input proto")
+}
+
+func getTagName(l *ast.BasicLit) (out string) {
+	if l != nil {
+		out = l.Value
 	}
-
-	if len(g.Request.FileToGenerate) == 0 {
-		g.Fail("no files to generate")
-	}
-
-	g.CommandLineParameters(g.Request.GetParameter())
-
-	fmt.Println(*g.Request)
+	return
 }

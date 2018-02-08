@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Generate Go structs using Proto files
+Generate Go structs using Go files
 
 ## Contents
 
@@ -18,7 +18,7 @@ go get github.com/rms1000watt/genni
 ## Usage
 
 ```
-Genni generates go structs from proto files
+Genni generates go structs from go files
 
 Usage:
   genni [flags]

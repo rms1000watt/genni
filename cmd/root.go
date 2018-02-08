@@ -14,8 +14,8 @@ var generatorCfg generator.Config
 
 var rootCmd = &cobra.Command{
 	Use:   "genni",
-	Short: "Genni generates go structs from proto files",
-	Long:  `Genni generates go structs from proto files`,
+	Short: "Genni generates go structs from go files",
+	Long:  `Genni generates go structs from go files`,
 	Run:   RootRun,
 }
 
