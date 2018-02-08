@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package examples;
+
+message PersonIn {
+  int64 id                       = 1;
+  string first_name              = 2;
+  string last_name               = 3;
+  address.Address address        = 4;
+  repeated Attendance attendance = 5;
+}
+
+message PersonOut {
+  string first_name       = 1;
+  string last_name        = 2;
+  address.Address address = 3;
+  Profile profile         = 4;
+}
+
