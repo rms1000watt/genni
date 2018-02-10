@@ -1,9 +1,12 @@
 package examples
 
 type PersonIn struct {
-	ID        int `json:"id"`
-	FirstName string
-	LastName  string
+	ID          int `json:"id" db:"id"`
+	FirstName   string
+	LastName    string
+	BrotherMSPo map[string]PersonOut
+	BrotherMSS  map[string]string
+	BrotherAPo  []PersonOut
 }
 
 type PersonOut struct {
