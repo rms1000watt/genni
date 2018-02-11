@@ -6,10 +6,13 @@ import (
 	"strings"
 
 	"github.com/rms1000watt/genni/generator"
+
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
+var logLevel string
 var generatorCfg generator.Config
 
 var rootCmd = &cobra.Command{
@@ -27,12 +30,15 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().StringVarP(&generatorCfg.InFile, "in", "i", "", "Proto file to read in")
+	rootCmd.PersistentFlags().StringVarP(&generatorCfg.InFile, "in", "i", "", "Proto file to read in")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set log level (debug, info, warn, error, fatal)")
 
+	setFlagsFromEnv(rootCmd)
 	setPFlagsFromEnv(rootCmd)
 }
 
 func RootRun(cmd *cobra.Command, args []string) {
+	configureLogging()
 	generator.Generator(generatorCfg)
 }
 
@@ -60,11 +66,11 @@ func setFlagsFromEnv(cmd *cobra.Command) {
 	})
 }
 
-// func configureLogging() {
-// 	if level, err := log.ParseLevel(logLevel); err != nil {
-// 		log.Error("log-level argument malformed: ", logLevel, ": ", err)
-// 		log.SetLevel(log.InfoLevel)
-// 	} else {
-// 		log.SetLevel(level)
-// 	}
-// }
+func configureLogging() {
+	if level, err := log.ParseLevel(logLevel); err != nil {
+		log.Error("log-level argument malformed: ", logLevel, ": ", err)
+		log.SetLevel(log.InfoLevel)
+	} else {
+		log.SetLevel(level)
+	}
+}

@@ -7,6 +7,7 @@ type PersonIn struct {
 	BrotherMSPo map[string]PersonOut
 	BrotherMSS  map[string]string
 	BrotherAPo  []PersonOut
+	BrotherPo   PersonOut
 }
 
 type PersonOut struct {
