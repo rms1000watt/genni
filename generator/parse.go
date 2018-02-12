@@ -1,11 +1,12 @@
 package generator
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
-	"reflect"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -28,21 +29,22 @@ func Parse(cfg Config) (structs []Struct, err error) {
 		case *ast.TypeSpec:
 			log.Debugf("Struct Name: %s", x.Name)
 			structInd++
-			structs[structInd].Name = NewName(x.Name.String())
+			structs = append(structs, Struct{})
+			// structs[structInd].Name = NewName(x.Name.String())
 		case *ast.Field:
-			field := Field{
-				Name: NewName(getFieldName(x.Names)),
-				// DataTypeName
-			}
+			fieldName := NewName(getFieldName(x.Names))
 
-			fieldTag := getTag(x.Tag)
-			fieldName := getFieldName(x.Names)
-			fieldType := getFieldType(x.Type)
-
-			// fmt.Printf("FIELD Name: %s Type: %s Tag: %s\n", fieldName, x.Type, tag)
+			structs[structInd].Fields = append(structs[structInd].Fields, Field{
+				// Name:       fieldName,
+				Tag:        getTag(x.Tag, fieldName.LowerSnake),
+				DataTypeIn: getFieldType(x.Type, 0),
+			})
 		}
 		return true
 	})
+
+	log.Debug(structs)
+
 	return
 }
 
@@ -53,32 +55,52 @@ func getFieldName(in []*ast.Ident) (out string) {
 	return
 }
 
-func getTag(in *ast.BasicLit) (out string) {
+func getTag(in *ast.BasicLit, snake string) (out string) {
 	if in != nil {
 		out = in.Value
 	}
-	return
+
+	var jsonTag string
+	if !strings.Contains(out, `json:"`) {
+		jsonTag = fmt.Sprintf(`json:"%s"`, snake)
+	}
+
+	var dbTag string
+	if !strings.Contains(out, `db:"`) {
+		dbTag = fmt.Sprintf(`db:"%s"`, snake)
+	}
+
+	return strings.TrimSpace(fmt.Sprintf("%s %s %s", jsonTag, dbTag, out))
 }
 
-func getFieldType(in ast.Expr) (out string) {
-	log.Debug(reflect.TypeOf(in))
+func getFieldType(in ast.Expr, recursionCnt int) (out string) {
+	// log.Debug(reflect.TypeOf(in))
 	switch y := in.(type) {
-	case *ast.MapType:
-		log.Debug("MapType: ", y.Key, y.Value)
-	case *ast.ArrayType:
-		log.Debug("ArrayType: ", y.Elt)
-	case *ast.StructType:
-		log.Debug("StructType: ", x.Names)
 	case *ast.Ident:
-		log.Debug("Ident: ", y.Name)
+		if recursionCnt == 0 {
+			return fmt.Sprintf("*%s", y.Name)
+		}
+		return y.Name
+	case *ast.MapType:
+		recursionCnt++
+		k := getFieldType(y.Key, recursionCnt)
+		v := getFieldType(y.Value, recursionCnt)
+		return fmt.Sprintf("*map[%s]%s", k, v)
+	case *ast.ArrayType:
+		recursionCnt++
+		t := getFieldType(y.Elt, recursionCnt)
+		return fmt.Sprintf("[]*%s", t)
+	case *ast.StructType:
+		log.Error("Anonymous struct field not supported. Exiting..")
+		os.Exit(1)
 	case *ast.InterfaceType:
-		log.Errorf("Interfaces %s not supported. Exiting..", x.Names)
+		log.Error("Interface fields not supported. Exiting..")
 		os.Exit(1)
 	case *ast.StarExpr:
-		log.Errorf("Pointers %s not supported. Exiting..", x.Names)
+		log.Error("Pointer fields not supported. Exiting..")
 		os.Exit(1)
 	default:
-		log.Error("Unhandled Type Encountered: ", y)
+		log.Errorf("Unhandled Type Encountered %s. Exiting..", y)
 		os.Exit(1)
 	}
 	return
