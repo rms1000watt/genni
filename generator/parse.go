@@ -5,15 +5,20 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
+var typeMap = map[string]bool{}
+
 func Parse(cfg Config) (structs []Struct, err error) {
 	log.Debug("Starting Parse")
 	defer log.Debug("Done Parse")
+
+	populateTypeMap()
 
 	fset := token.NewFileSet()
 
@@ -33,17 +38,39 @@ func Parse(cfg Config) (structs []Struct, err error) {
 			// structs[structInd].Name = NewName(x.Name.String())
 		case *ast.Field:
 			fieldName := NewName(getFieldName(x.Names))
+			fieldType := getFieldType(x.Type, 0)
 
 			structs[structInd].Fields = append(structs[structInd].Fields, Field{
 				// Name:       fieldName,
 				Tag:        getTag(x.Tag, fieldName.LowerSnake),
-				DataTypeIn: getFieldType(x.Type, 0),
+				DataTypeIn: fieldType,
+				IsRepeated: getIsRepeated(x.Type),
+				IsMap:      strings.Contains(fieldType, "map["),
 			})
 		}
 		return true
 	})
 
 	log.Debug(structs)
+	return
+}
+
+func populateTypeMap() {
+	for _, typ := range types.Typ {
+		typeMap[typ.Name()] = true
+	}
+}
+
+func isBuiltin(in ast.Expr) (out bool) {
+	return typeMap[types.ExprString(in)]
+}
+
+func getIsRepeated(in ast.Expr) (out bool) {
+	// i := &types.Info{}
+	// fmt.Println(i.TypeOf(in))
+	fmt.Println(types.ExprString(in))
+	// fmt.Println(types.Int)
+	fmt.Println(isBuiltin(in))
 
 	return
 }
