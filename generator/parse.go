@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"reflect"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -35,17 +36,25 @@ func Parse(cfg Config) (structs []Struct, err error) {
 			log.Debugf("Struct Name: %s", x.Name)
 			structInd++
 			structs = append(structs, Struct{})
-			// structs[structInd].Name = NewName(x.Name.String())
+			structs[structInd].Name = NewName(x.Name.String())
 		case *ast.Field:
 			fieldName := NewName(getFieldName(x.Names))
 			fieldType := getFieldType(x.Type, 0)
 
+			fmt.Println("type:", types.ExprString(x.Type))
+			fmt.Println("ast type:", reflect.TypeOf(x.Type))
+			fmt.Println("builtin:", getIsRepeatedBuiltin(x.Type))
+			fmt.Println("struct:", getIsRepeatedStruct(x.Type))
+			fmt.Println()
+
 			structs[structInd].Fields = append(structs[structInd].Fields, Field{
-				// Name:       fieldName,
-				Tag:        getTag(x.Tag, fieldName.LowerSnake),
-				DataTypeIn: fieldType,
-				IsRepeated: getIsRepeated(x.Type),
-				IsMap:      strings.Contains(fieldType, "map["),
+				Name:              fieldName,
+				Tag:               getTag(x.Tag, fieldName.LowerSnake),
+				DataTypeIn:        fieldType,
+				IsRepeatedBuiltin: getIsRepeatedBuiltin(x.Type),
+				IsRepeatedStruct:  getIsRepeatedStruct(x.Type),
+				IsMap:             getIsMap(x.Type),
+				IsStruct:          getIsStruct(x.Type),
 			})
 		}
 		return true
@@ -65,14 +74,33 @@ func isBuiltin(in ast.Expr) (out bool) {
 	return typeMap[types.ExprString(in)]
 }
 
-func getIsRepeated(in ast.Expr) (out bool) {
-	// i := &types.Info{}
-	// fmt.Println(i.TypeOf(in))
-	fmt.Println(types.ExprString(in))
-	// fmt.Println(types.Int)
-	fmt.Println(isBuiltin(in))
-
+func getIsMap(in ast.Expr) (out bool) {
+	if _, ok := in.(*ast.MapType); ok {
+		return true
+	}
 	return
+}
+
+func getIsStruct(in ast.Expr) (out bool) {
+	return !isBuiltin(in)
+}
+
+func getIsRepeatedBuiltin(in ast.Expr) (out bool) {
+	arrayType, ok := in.(*ast.ArrayType)
+	if !ok {
+		return
+	}
+
+	return isBuiltin(arrayType.Elt)
+}
+
+func getIsRepeatedStruct(in ast.Expr) (out bool) {
+	arrayType, ok := in.(*ast.ArrayType)
+	if !ok {
+		return
+	}
+
+	return !isBuiltin(arrayType.Elt)
 }
 
 func getFieldName(in []*ast.Ident) (out string) {
@@ -101,7 +129,6 @@ func getTag(in *ast.BasicLit, snake string) (out string) {
 }
 
 func getFieldType(in ast.Expr, recursionCnt int) (out string) {
-	// log.Debug(reflect.TypeOf(in))
 	switch y := in.(type) {
 	case *ast.Ident:
 		if recursionCnt == 0 {
