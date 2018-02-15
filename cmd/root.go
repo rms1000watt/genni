@@ -19,7 +19,9 @@ var rootCmd = &cobra.Command{
 	Use:   "genni",
 	Short: "Genni generates go structs from go files",
 	Long:  `Genni generates go structs from go files`,
-	Run:   RootRun,
+	Example: `  genni -i examples/people.go
+  genni -i examples/people.go --log-level debug`,
+	Run: RootRun,
 }
 
 func Execute() {
@@ -30,8 +32,10 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&generatorCfg.InFile, "in", "i", "", "Proto file to read in")
+	rootCmd.PersistentFlags().StringVarP(&generatorCfg.InFile, "in", "i", "", "Proto file to read in (Required)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "Set log level (debug, info, warn, error, fatal)")
+
+	cobra.MarkFlagRequired(rootCmd.PersistentFlags(), "in")
 
 	setFlagsFromEnv(rootCmd)
 	setPFlagsFromEnv(rootCmd)

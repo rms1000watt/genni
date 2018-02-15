@@ -23,7 +23,12 @@ Genni generates go structs from go files
 Usage:
   genni [flags]
 
+Examples:
+  genni -i examples/people.go
+  genni -i examples/people.go --log-level debug
+
 Flags:
-  -h, --help        help for genni
-  -i, --in string   Proto file to read in
+  -h, --help               help for genni
+  -i, --in string          Proto file to read in (Required)
+      --log-level string   Set log level (debug, info, warn, error, fatal) (default "info")
 ```
