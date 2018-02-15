@@ -54,7 +54,7 @@ func Parse(cfg Config) (genni Genni, err error) {
 				Name:              fieldName,
 				Tag:               getTag(x.Tag, fieldName.LowerSnake),
 				DataType:          getDataType(x.Type),
-				DataTypeIn:        getDataTypeIn(x.Type, 0),
+				DataTypeIn:        getDataTypeIn(x.Type, 0, false),
 				IsRepeatedBuiltin: getIsRepeatedBuiltin(x.Type),
 				IsRepeatedStruct:  getIsRepeatedStruct(x.Type),
 				IsMap:             getIsMap(x.Type),
@@ -166,23 +166,27 @@ func getDataType(in ast.Expr) (out string) {
 	return
 }
 
-func getDataTypeIn(in ast.Expr, recursionCnt int) (out string) {
+func getDataTypeIn(in ast.Expr, recursionCnt int, isMapType bool) (out string) {
 	isValidType(in)
 
 	switch y := in.(type) {
 	case *ast.Ident:
+		out = y.Name
 		if recursionCnt == 0 {
-			return fmt.Sprintf("*%s", y.Name)
+			out = "*" + out
 		}
-		return y.Name
+		if !isMapType && !isBuiltin(in) {
+			out += "P"
+		}
+		return
 	case *ast.MapType:
 		recursionCnt++
-		k := getDataTypeIn(y.Key, recursionCnt)
-		v := getDataTypeIn(y.Value, recursionCnt)
+		k := getDataTypeIn(y.Key, recursionCnt, true)
+		v := getDataTypeIn(y.Value, recursionCnt, true)
 		return fmt.Sprintf("*map[%s]%s", k, v)
 	case *ast.ArrayType:
 		recursionCnt++
-		t := getDataTypeIn(y.Elt, recursionCnt)
+		t := getDataTypeIn(y.Elt, recursionCnt, false)
 		return fmt.Sprintf("[]*%s", t)
 	default:
 		log.Errorf("Unhandled Type Encountered %s. Exiting..", y)
