@@ -2,6 +2,7 @@ package generator
 
 type Field struct {
 	Name
+	DataType          string
 	DataTypeIn        string
 	DataTypeDB        string
 	IsRepeatedBuiltin bool
